@@ -187,3 +187,5 @@ output/
 # Server logs
 server_debug.log
 server_reboot.log
+
+config.json

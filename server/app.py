@@ -19,6 +19,19 @@ app = Flask(__name__, static_folder="static")
 
 # --- Load Config ---
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+DEFAULT_CONFIG = {
+    "telegram_token": "",
+    "telegram_chat_id": "",
+    "admin_password": "admin",
+    "flask_secret": "fallback-secret-key",
+    "ngrok_token": ""
+}
+
+if not os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(DEFAULT_CONFIG, f, indent=4)
+
 with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
